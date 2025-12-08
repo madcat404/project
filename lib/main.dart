@@ -6,6 +6,7 @@ void main() {
   runApp(const MyApp());
 }
 
+//터치 및 마우스 허용
 class MyCustomScrollBehavior extends MaterialScrollBehavior {
   @override
   Set<PointerDeviceKind> get dragDevices => {

@@ -1,18 +1,16 @@
+// 파일 경로: lib/screens/asset_status_screen.dart
 import 'package:flutter/foundation.dart';
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:http/http.dart' as http;
 import 'package:project/services/ocr_service.dart' if (dart.library.html) 'package:project/services/ocr_service_web.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:project/screens/file_manager_screen.dart';
-import 'package:project/screens/unit_detail_screen.dart';
 import 'package:project/screens/home_page.dart';
-import 'package:project/screens/annual_rent_summary_screen.dart';
-import 'package:project/screens/deposit_return_screen.dart';
 import 'package:project/models/asset_models.dart';
+import 'package:project/services/asset_service.dart';
+import 'package:project/widgets/asset_building_selector.dart';
+import 'package:project/widgets/asset_unit_card.dart';
 
 class AssetStatusScreen extends StatefulWidget {
   final String? buildingName;
@@ -23,42 +21,54 @@ class AssetStatusScreen extends StatefulWidget {
 }
 
 class _AssetStatusScreenState extends State<AssetStatusScreen> {
+  final AssetService _assetService = AssetService();
+
   int _selectedBuildingIndex = 0;
   late ScrollController _scrollController;
   bool _isLandscape = false;
 
-  final List<Building> _buildings = [
-    Building(
-      name: '강남 럭키빌딩', address: '서울시 강남구 테헤란로 123', totalUnits: 15, vacantUnits: 1,
-      units: [
-        const Unit(roomNumber: '101호', tenantName: '김철수', isVacant: false, expiryDate: '2025-10-31', deposit: '1억', rent: '150만원', gender: '남성', contact: '010-1111-2222', realty: '강남부동산', notes: '애완동물(강아지) 키움.', contractDate: '2023-11-01', unpaidAmount: '0원', area: '25평', moveInDate: '2023-11-01', entrancePassword: '*1234#', roomPassword: '#5678', hasAc: true, hasFridge: true, hasGasStove: true, hasWasher: true, hasTv: true, hasInternet: true, hasParking: false, hasElevator: true, depositStatus: DepositStatus.imminent),
-        const Unit(roomNumber: '102호', tenantName: '-', isVacant: true, expiryDate: '-', deposit: '-', rent: '-', gender: '-', contact: '-', realty: '-', notes: '도배, 장판 새로 완료.', contractDate: '-', unpaidAmount: '0원', area: '25평', moveInDate: '-', entrancePassword: '*0000#', roomPassword: '#9999', hasAc: true, hasFridge: true, hasGasStove: true, hasWasher: true, hasTv: false, hasInternet: true, hasParking: false, hasElevator: true, depositStatus: DepositStatus.returned),
-        const Unit(roomNumber: '201호', tenantName: '이영희', isVacant: false, expiryDate: '2025-03-15', deposit: '1.2억', rent: '160만원', gender: '여성', contact: '010-3333-4444', realty: '강남부동산', notes: '-', contractDate: '2023-03-16', unpaidAmount: '160만원', area: '28평', moveInDate: '2023-03-16', entrancePassword: '#5678*', roomPassword: '#1212', hasAc: true, hasFridge: true, hasGasStove: true, hasWasher: true, hasTv: true, hasInternet: true, hasParking: false, hasElevator: true, depositStatus: DepositStatus.partiallyReturned),
-        const Unit(roomNumber: '202호', tenantName: '박지민', isVacant: false, expiryDate: '2026-01-20', deposit: '1억', rent: '155만원', gender: '남성', contact: '010-5555-6666', realty: '삼성부동산', notes: '-', contractDate: '2024-01-21', unpaidAmount: '0원', area: '25평', moveInDate: '2024-01-21', entrancePassword: '#1122*', roomPassword: '#3434', hasAc: true, hasFridge: true, hasGasStove: false, hasWasher: true, hasTv: true, hasInternet: true, hasParking: false, hasElevator: true, depositStatus: DepositStatus.imminent),
-        const Unit(roomNumber: '301호', tenantName: '최유나', isVacant: false, expiryDate: '2024-12-10', deposit: '5천만원', rent: '120만원', gender: '여성', contact: '010-7777-8888', realty: '강남부동산', notes: '-', contractDate: '2022-12-11', unpaidAmount: '0원', area: '22평', moveInDate: '2022-12-11', entrancePassword: '#3344*', roomPassword: '#7878', hasAc: true, hasFridge: true, hasGasStove: true, hasWasher: true, hasTv: false, hasInternet: true, hasParking: false, hasElevator: true, depositStatus: DepositStatus.imminent),
-      ]
-    ),
-    const Building(name: '골든파크빌', address: '부산광역시 서구 아미동2가 19-8', totalUnits: 8, vacantUnits: 1, units: [
-       Unit(roomNumber: '708호', tenantName: '홍길동', isVacant: false, expiryDate: '2025-05-10', deposit: '1억', rent: '100만원', gender: '남성', contact: '010-9999-8888', realty: '부산부동산', notes: '-', contractDate: '2023-05-11', unpaidAmount: '500,000원', area: '30평', moveInDate: '2023-05-11', entrancePassword: '*9988#', roomPassword: '#1234', hasAc: true, hasFridge: true, hasGasStove: true, hasWasher: true, hasTv: true, hasInternet: true, hasParking: true, hasElevator: true, depositStatus: DepositStatus.imminent),
-       Unit(roomNumber: '303호', tenantName: '김영희', isVacant: false, expiryDate: '2024-11-20', deposit: '5천만원', rent: '80만원', gender: '여성', contact: '010-1111-3333', realty: '부산부동산', notes: '-', contractDate: '2022-11-21', unpaidAmount: '470,000원', area: '18평', moveInDate: '2022-11-21', entrancePassword: '*1133#', roomPassword: '#5678', hasAc: true, hasFridge: true, hasGasStove: false, hasWasher: true, hasTv: false, hasInternet: true, hasParking: true, hasElevator: true, depositStatus: DepositStatus.imminent),
-       Unit(roomNumber: '201호', tenantName: '박철수', isVacant: false, expiryDate: '2025-09-01', deposit: '8천만원', rent: '90만원', gender: '남성', contact: '010-4444-5555', realty: '부산부동산', notes: '-', contractDate: '2023-09-02', unpaidAmount: '450,000원', area: '20평', moveInDate: '2023-09-02', entrancePassword: '*4455#', roomPassword: '#9012', hasAc: true, hasFridge: true, hasGasStove: true, hasWasher: true, hasTv: true, hasInternet: false, hasParking: true, hasElevator: true, depositStatus: DepositStatus.imminent),
-    ]),
-  ];
+  // 데이터 로딩 상태 관리 변수들
+  List<Building> _buildings = [];
+  bool _isLoading = true; // 로딩 중 여부
 
   @override
   void initState() {
     super.initState();
     _scrollController = ScrollController();
-    if (widget.buildingName != null) {
-      final index = _buildings.indexWhere((b) => b.name == widget.buildingName);
-      if (index != -1) {
-        _selectedBuildingIndex = index;
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (_scrollController.hasClients) {
-            _scrollToIndex(index);
+    _loadBuildings(); // 데이터 불러오기 시작
+  }
+
+  // 비동기로 데이터 불러오기
+  Future<void> _loadBuildings() async {
+    try {
+      // 서비스에서 데이터를 가져옴 (더미 + 서버)
+      final buildings = await _assetService.getBuildings();
+
+      if (!mounted) return;
+      setState(() {
+        _buildings = buildings;
+        _isLoading = false; // 로딩 완료
+
+        // 데이터 로드 후 특정 건물로 이동해야 하는 경우 처리
+        if (widget.buildingName != null) {
+          final index = _buildings.indexWhere((b) => b.name == widget.buildingName);
+          if (index != -1) {
+            _selectedBuildingIndex = index;
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (_scrollController.hasClients) {
+                _scrollToIndex(index);
+              }
+            });
           }
-        });
-      }
+        }
+      });
+    } catch (e) {
+      // 에러 처리
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('데이터를 불러오는데 실패했습니다: $e')));
     }
   }
 
@@ -78,24 +88,8 @@ class _AssetStatusScreenState extends State<AssetStatusScreen> {
     _scrollController.animateTo(scrollPosition, duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
   }
 
-  Future<void> _makePhoneCall(String phoneNumber) async {
-    final Uri launchUri = Uri(
-      scheme: 'tel',
-      path: phoneNumber,
-    );
-    if (await canLaunchUrl(launchUri)) {
-      await launchUrl(launchUri);
-    } else {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('전화 앱을 열 수 없습니다: $phoneNumber')),
-        );
-      }
-    }
-  }
-
   Future<void> _addAssetFromPdf() async {
-    Navigator.pop(context); // Close the bottom sheet
+    Navigator.pop(context);
 
     FilePickerResult? result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
@@ -103,140 +97,74 @@ class _AssetStatusScreenState extends State<AssetStatusScreen> {
     );
 
     if (result == null) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('파일 선택이 취소되었습니다.')),
-        );
-      }
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('파일 선택이 취소되었습니다.')));
       return;
     }
 
     if (!mounted) return;
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext context) {
-        return const Center(child: CircularProgressIndicator());
-      },
-    );
+    _showLoading();
 
     try {
       final fileBytes = result.files.single.bytes;
       final fileName = result.files.single.name;
 
-      if (fileBytes == null) {
-        throw Exception('파일을 읽을 수 없습니다.');
-      }
+      if (fileBytes == null) throw Exception('파일을 읽을 수 없습니다.');
 
-      var uri = Uri.parse('https://fms.iwin.kr/brother/ocr_pdf_upload.php');
-      var request = http.MultipartRequest('POST', uri);
-      request.files.add(http.MultipartFile.fromBytes(
-        'uploaded_file', // This key should match your PHP script: $_FILES['uploaded_file']
-        fileBytes,
-        filename: fileName,
-      ));
+      final responseBody = await _assetService.uploadPdf(fileBytes, fileName);
 
-      var response = await request.send();
-      
       if (!mounted) return;
-      Navigator.pop(context); // Close loading dialog
+      Navigator.pop(context);
 
-      final responseBody = await response.stream.bytesToString();
+      // 업로드 성공 후 데이터 새로고침 (새로 추가된 건물을 보기 위해)
+      await _loadBuildings();
 
-      await showDialog(
-        context: context,
-        builder: (BuildContext context) {
-          return AlertDialog(
-            title: Text(response.statusCode == 200 ? '업로드 성공' : '업로드 실패'),
-            content: Text('서버 응답: $responseBody'),
-            actions: [
-              TextButton(
-                child: const Text('확인'),
-                onPressed: () => Navigator.of(context).pop(),
-              ),
-            ],
-          );
-        },
-      );
+      _showAlert('업로드 완료', '서버 응답: $responseBody');
     } catch (e) {
       if (!mounted) return;
-      Navigator.pop(context); // Close loading dialog
-
-      await showDialog(
-        context: context,
-        builder: (BuildContext context) {
-          return AlertDialog(
-            title: const Text('오류'),
-            content: Text('파일 업로드 중 오류가 발생했습니다: $e'),
-            actions: [
-              TextButton(
-                child: const Text('확인'),
-                onPressed: () => Navigator.of(context).pop(),
-              ),
-            ],
-          );
-        },
-      );
+      Navigator.pop(context);
+      _showAlert('오류', '파일 업로드 중 오류가 발생했습니다: $e');
     }
   }
 
   Future<void> _addAssetFromOcr() async {
     Navigator.pop(context);
-
     final ImagePicker picker = ImagePicker();
     final XFile? image = await picker.pickImage(source: ImageSource.gallery);
 
     if (image == null) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('이미지 선택이 취소되었습니다.'),
-            duration: Duration(seconds: 2),
-          ),
-        );
-      }
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('이미지 선택이 취소되었습니다.')));
       return;
     }
 
-    final String path = image.path;
-
     if (!mounted) return;
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext context) {
-        return const Center(child: CircularProgressIndicator());
-      },
-    );
+    _showLoading();
 
-    String ocrResult = await OcrService.performOcr(path);
+    String ocrResult = await OcrService.performOcr(image.path);
 
     if (!mounted) return;
     Navigator.pop(context);
 
-    if (mounted) {
-      showDialog(
-        context: context,
-        builder: (BuildContext context) {
-          return AlertDialog(
-            title: const Text('OCR 인식 결과'),
-            content: SingleChildScrollView(
-              child: Text(ocrResult.isEmpty ? '인식된 텍스트가 없습니다.' : ocrResult),
-            ),
-            actions: <Widget>[
-              TextButton(
-                child: const Text('확인'),
-                onPressed: () {
-                  Navigator.of(context).pop();
-                },
-              ),
-            ],
-          );
-        },
-      );
-    }
+    _showAlert('OCR 인식 결과', ocrResult.isEmpty ? '인식된 텍스트가 없습니다.' : ocrResult);
   }
 
+  void _showLoading() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) => const Center(child: CircularProgressIndicator()),
+    );
+  }
+
+  void _showAlert(String title, String content) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) => AlertDialog(
+        title: Text(title),
+        content: SingleChildScrollView(child: Text(content)),
+        actions: [TextButton(child: const Text('확인'), onPressed: () => Navigator.of(context).pop())],
+      ),
+    );
+  }
 
   void _showAssetMoreOptions() {
     showModalBottomSheet(
@@ -245,8 +173,8 @@ class _AssetStatusScreenState extends State<AssetStatusScreen> {
         return SafeArea(
           child: Wrap(children: <Widget>[
             ListTile(leading: const Icon(Icons.folder_copy_outlined), title: const Text('파일 관리'), onTap: () {
-                Navigator.pop(context);
-                Navigator.push(context, MaterialPageRoute(builder: (context) => const FileManagerScreen()));
+              Navigator.pop(context);
+              Navigator.push(context, MaterialPageRoute(builder: (context) => const FileManagerScreen()));
             }),
             ListTile(leading: const Icon(Icons.add_business_outlined), title: const Text('자산추가'), onTap: _addAssetFromOcr),
             ListTile(leading: const Icon(Icons.picture_as_pdf_outlined), title: const Text('자산추가 (pdf)'), onTap: _addAssetFromPdf),
@@ -259,81 +187,39 @@ class _AssetStatusScreenState extends State<AssetStatusScreen> {
     );
   }
 
-  void _showRealEstateNotificationDialog(BuildContext context, Unit unit) {
-    final List<String> realEstateAgencies = _buildings.expand((b) => b.units).map((u) => u.realty).where((r) => r.isNotEmpty && r != '-').toSet().toList();
-    final Set<String> selectedAgencies = {};
-
-    showDialog(
-      context: context,
-      builder: (BuildContext dialogContext) {
-        return StatefulBuilder(
-          builder: (context, setState) {
-            return AlertDialog(
-              title: Text('${unit.roomNumber} 공실 알림'),
-              content: SizedBox(
-                width: double.maxFinite,
-                child: ListView.builder(
-                  shrinkWrap: true,
-                  itemCount: realEstateAgencies.length,
-                  itemBuilder: (context, index) {
-                    final agency = realEstateAgencies[index];
-                    return CheckboxListTile(
-                      title: Text(agency),
-                      value: selectedAgencies.contains(agency),
-                      onChanged: (bool? value) {
-                        setState(() {
-                          if (value == true) {
-                            selectedAgencies.add(agency);
-                          } else {
-                            selectedAgencies.remove(agency);
-                          }
-                        });
-                      },
-                    );
-                  },
-                ),
-              ),
-              actions: <Widget>[
-                TextButton(
-                  child: const Text('취소'),
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                  },
-                ),
-                TextButton(
-                  child: const Text('보내기'),
-                  onPressed: selectedAgencies.isEmpty
-                      ? null
-                      : () {
-                          Navigator.of(context).pop();
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text('${selectedAgencies.length}곳의 부동산에 알림을 보냈습니다.'),
-                              duration: const Duration(seconds: 2),
-                            ),
-                          );
-                        },
-                ),
-              ],
-            );
-          },
-        );
-      },
-    );
-  }
-
   void _onItemTapped(int index) {
     Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(builder: (context) => HomePage(initialIndex: index)),
-      (Route<dynamic> route) => false,
+          (Route<dynamic> route) => false,
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    // 로딩 중이면 로딩 표시
+    if (_isLoading) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    // 건물이 하나도 없을 때 처리
+    if (_buildings.isEmpty) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('장부관리')),
+        body: const Center(child: Text("등록된 건물이 없습니다.")),
+        bottomNavigationBar: _buildBottomNavigationBar(),
+      );
+    }
+
+    // 인덱스 안전장치
+    if (_selectedBuildingIndex >= _buildings.length) {
+      _selectedBuildingIndex = 0;
+    }
+
     final selectedBuilding = _buildings[_selectedBuildingIndex];
-    final textTheme = Theme.of(context).textTheme;
-    final double textScaleFactor = _isLandscape ? 1.2 : 1.0;
+    final textScaleFactor = _isLandscape ? 1.2 : 1.0;
+
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.buildingName == null ? '장부관리' : '장부관리 (${widget.buildingName!})', style: TextStyle(fontSize: 18 * textScaleFactor)),
@@ -348,14 +234,9 @@ class _AssetStatusScreenState extends State<AssetStatusScreen> {
               setState(() {
                 _isLandscape = !_isLandscape;
                 if (_isLandscape) {
-                  SystemChrome.setPreferredOrientations([
-                    DeviceOrientation.landscapeLeft,
-                    DeviceOrientation.landscapeRight,
-                  ]);
+                  SystemChrome.setPreferredOrientations([DeviceOrientation.landscapeLeft, DeviceOrientation.landscapeRight]);
                 } else {
-                  SystemChrome.setPreferredOrientations([
-                    DeviceOrientation.portraitUp,
-                  ]);
+                  SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
                 }
               });
             },
@@ -370,274 +251,64 @@ class _AssetStatusScreenState extends State<AssetStatusScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             if (widget.buildingName == null) ...[
-              _buildBuildingSelectionSection(textScaleFactor),
+              AssetBuildingSelector(
+                buildings: _buildings,
+                selectedIndex: _selectedBuildingIndex,
+                scrollController: _scrollController,
+                isLandscape: _isLandscape,
+                onSelected: (index) {
+                  setState(() {
+                    _selectedBuildingIndex = index;
+                    _scrollToIndex(index);
+                  });
+                },
+              ),
               const SizedBox(height: 24),
             ],
-            _buildUnitStatusSection(textScaleFactor)
-          ]
-        )
-      ),
-      bottomNavigationBar: BottomNavigationBar(
-        items: const <BottomNavigationBarItem>[
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: '홈'),
-          BottomNavigationBarItem(icon: Icon(Icons.monetization_on), label: '캐쉬'),
-          BottomNavigationBarItem(icon: Icon(Icons.shopping_bag), label: '상품'),
-          BottomNavigationBarItem(icon: Icon(Icons.people), label: '커뮤니티'),
-          BottomNavigationBarItem(icon: Icon(Icons.campaign), label: '내집홍보'),
-        ],
-        currentIndex: 0,
-        selectedItemColor: Colors.blueAccent,
-        unselectedItemColor: Colors.grey,
-        onTap: _onItemTapped,
-        type: BottomNavigationBarType.fixed,
-      ),
-    );
-  }
-
-  Widget _buildBuildingSelectionSection(double textScaleFactor) {
-    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text('보유 건물 현황', style: TextStyle(fontSize: 18 * textScaleFactor, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 12),
-        Row(children: [
-          IconButton(icon: const Icon(Icons.arrow_back_ios), onPressed: _selectedBuildingIndex > 0 ? () { final newIndex = _selectedBuildingIndex - 1; setState(() => _selectedBuildingIndex = newIndex); _scrollToIndex(newIndex); } : null),
-          Expanded(child: SizedBox(height: 100 * textScaleFactor, child: ListView.separated(controller: _scrollController, scrollDirection: Axis.horizontal, itemCount: _buildings.length, separatorBuilder: (context, index) => const SizedBox(width: 12), itemBuilder: (context, index) { final building = _buildings[index]; final isSelected = index == _selectedBuildingIndex; return InkWell(onTap: () { setState(() => _selectedBuildingIndex = index); _scrollToIndex(index); }, child: Card(elevation: 2, color: isSelected ? Colors.blue.shade50 : Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: isSelected ? BorderSide(color: Colors.blue.shade300, width: 2) : BorderSide.none), child: Container(width: 200 * textScaleFactor, padding: const EdgeInsets.all(16.0), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(building.name, style: TextStyle(fontSize: 16 * textScaleFactor, fontWeight: FontWeight.bold)), const Spacer(), Text(building.address, style: TextStyle(fontSize: 12 * textScaleFactor, color: Colors.grey[600]), overflow: TextOverflow.ellipsis),
-            Text.rich(TextSpan(style: TextStyle(fontSize: 12 * textScaleFactor, color: Colors.grey[600]), children: [const TextSpan(text: '총 '), TextSpan(text: '${building.totalUnits}', style: const TextStyle(color: Colors.blueAccent, fontWeight: FontWeight.bold)), const TextSpan(text: '호실 / 공실 '), TextSpan(text: '${building.vacantUnits}', style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold))]))
-            ])))); },))),
-          IconButton(icon: const Icon(Icons.arrow_forward_ios), onPressed: _selectedBuildingIndex < _buildings.length - 1 ? () { final newIndex = _selectedBuildingIndex + 1; setState(() => _selectedBuildingIndex = newIndex); _scrollToIndex(newIndex); } : null)
-        ])
-      ]);
-  }
-
-  Widget _buildAmenityIcon(IconData icon, bool isAvailable, String name, double textScaleFactor) {
-    return Tooltip(
-      message: name,
-      child: Padding(
-        padding: const EdgeInsets.only(right: 8.0),
-        child: Icon(
-          icon,
-          size: 20 * textScaleFactor,
-          color: isAvailable ? Colors.grey[700] : Colors.grey[300],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildUnitStatusSection(double textScaleFactor) {
-    final selectedBuilding = _buildings[_selectedBuildingIndex];
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text('${selectedBuilding.name} - 호실 현황 (${selectedBuilding.units.length}개)', style: TextStyle(fontSize: 18 * textScaleFactor, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 12),
-        ListView.separated(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: selectedBuilding.units.length,
-          separatorBuilder: (context, index) => const SizedBox(height: 10),
-          itemBuilder: (context, index) {
-            final unit = selectedBuilding.units[index];
-            final statusColor = unit.isVacant ? Colors.red : Colors.green;
-
-            IconData genderIcon;
-            Color? genderColor;
-            if (unit.gender == '남성') {
-              genderIcon = Icons.male;
-              genderColor = Colors.blueAccent;
-            } else if (unit.gender == '여성') {
-              genderIcon = Icons.female;
-              genderColor = Colors.pinkAccent;
-            } else {
-              genderIcon = Icons.person_outline;
-            }
-
-            return Card(
-              elevation: 2,
-              color: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(unit.roomNumber, style: TextStyle(fontSize: 20 * textScaleFactor, fontWeight: FontWeight.bold, color: statusColor)),
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Container(
-                              margin: const EdgeInsets.symmetric(horizontal: 4.0),
-                              decoration: BoxDecoration(
-                                color: Colors.grey[200],
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Material(type: MaterialType.transparency, child: IconButton(icon: Icon(Icons.info_outline, size: 20 * textScaleFactor), visualDensity: VisualDensity.compact, tooltip: '상세보기', onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => UnitDetailScreen(unit: unit, building: selectedBuilding))))),
-                            ),
-                            Container(
-                              margin: const EdgeInsets.symmetric(horizontal: 4.0),
-                              decoration: BoxDecoration(
-                                color: Colors.grey[200],
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Material(type: MaterialType.transparency, child: IconButton(icon: Icon(Icons.campaign, size: 20 * textScaleFactor), visualDensity: VisualDensity.compact, tooltip: '부동산에 공실 알림', onPressed: () => _showRealEstateNotificationDialog(context, unit))),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    Table(
-                      columnWidths: const {0: FlexColumnWidth(1), 1: FlexColumnWidth(1)},
-                      children: [
-                        TableRow(
-                          children: [
-                            _buildInfoCell(genderIcon, unit.tenantName, textScaleFactor, color: genderColor),
-                            _buildClickableInfoCell(Icons.phone_iphone_outlined, unit.contact, () => _makePhoneCall(unit.contact), textScaleFactor),
-                          ]
-                        ),
-                        TableRow(
-                          children: [
-                            _buildInfoCell(Icons.event_available_outlined, unit.moveInDate, textScaleFactor),
-                            _buildInfoCell(Icons.date_range_outlined, unit.expiryDate, textScaleFactor),
-                          ]
-                        ),
-                        TableRow(
-                          children: [
-                            _buildClickableDepositCell(unit, selectedBuilding, textScaleFactor),
-                            _buildInfoCell(Icons.square_foot_outlined, unit.area, textScaleFactor),
-                          ]
-                        ),
-                        TableRow(
-                          children: [
-                            _buildInfoCell(Icons.sensor_door_outlined, unit.roomPassword, textScaleFactor),
-                            _buildInfoCell(Icons.vpn_key_outlined, unit.entrancePassword, textScaleFactor),
-                          ]
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                     Wrap(
-                      spacing: 4.0,
-                      runSpacing: 4.0,
-                      children: [
-                        _buildAmenityIcon(Icons.ac_unit, unit.hasAc, '에어컨', textScaleFactor),
-                        _buildAmenityIcon(Icons.kitchen, unit.hasFridge, '냉장고', textScaleFactor),
-                        _buildAmenityIcon(Icons.local_fire_department, unit.hasGasStove, '가스레인지', textScaleFactor),
-                        _buildAmenityIcon(Icons.local_laundry_service, unit.hasWasher, '세탁기', textScaleFactor),
-                        _buildAmenityIcon(Icons.tv, unit.hasTv, 'TV', textScaleFactor),
-                        _buildAmenityIcon(Icons.wifi, unit.hasInternet, '인터넷', textScaleFactor),
-                        _buildAmenityIcon(Icons.local_parking, unit.hasParking, '주차장', textScaleFactor),
-                        _buildAmenityIcon(Icons.elevator, unit.hasElevator, '엘리베이터', textScaleFactor),
-                      ],
-                    ),
-                  ],
-                ),
+            Text('${selectedBuilding.name} - 호실 현황 (${selectedBuilding.units.length}개)', style: TextStyle(fontSize: 18 * textScaleFactor, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 12),
+            // 호실이 없을 경우 안내 메시지
+            if (selectedBuilding.units.isEmpty)
+              Padding(
+                padding: const EdgeInsets.all(20.0),
+                child: Center(child: Text("등록된 호실 정보가 없습니다.", style: TextStyle(color: Colors.grey[600]))),
               )
-            );
-          },
-        ),
-      ],
-    );
-  }
-
-  Widget _buildInfoCell(IconData icon, String text, double textScaleFactor, {Color? color}) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4.0),
-      child: Row(
-        children: [
-          Icon(icon, size: 16 * textScaleFactor, color: color ?? Colors.grey[700]),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(text, style: TextStyle(fontSize: 13 * textScaleFactor), overflow: TextOverflow.ellipsis),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildClickableInfoCell(IconData icon, String text, VoidCallback onTap, double textScaleFactor) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4.0),
-      child: InkWell(
-        onTap: (text.isNotEmpty && text != '-') ? onTap : null,
-        child: Row(
-          children: [
-            Icon(icon, size: 16 * textScaleFactor, color: Colors.grey[700]),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                text,
-                style: TextStyle(
-                  color: (text.isNotEmpty && text != '-') ? Colors.blue : Colors.black,
-                  decoration: (text.isNotEmpty && text != '-') ? TextDecoration.underline : TextDecoration.none,
-                  fontSize: 13 * textScaleFactor
-                ),
-                overflow: TextOverflow.ellipsis,
+            else
+              ListView.separated(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: selectedBuilding.units.length,
+                separatorBuilder: (context, index) => const SizedBox(height: 10),
+                itemBuilder: (context, index) {
+                  return AssetUnitCard(
+                    unit: selectedBuilding.units[index],
+                    building: selectedBuilding,
+                    isLandscape: _isLandscape,
+                    allBuildings: _buildings,
+                  );
+                },
               ),
-            ),
           ],
         ),
       ),
+      bottomNavigationBar: _buildBottomNavigationBar(),
     );
   }
 
-  Widget _buildClickableDepositCell(Unit unit, Building building, double textScaleFactor) {
-     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4.0),
-      child: Row(
-        children: [
-          Icon(Icons.attach_money_outlined, size: 16 * textScaleFactor, color: Colors.grey[700]),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text.rich(
-              TextSpan(
-                style: TextStyle(fontSize: 13 * textScaleFactor, color: Colors.black),
-                children: [
-                  TextSpan(
-                    text: '${unit.deposit} ',
-                      style: const TextStyle(
-                      color: Colors.blue,
-                      decoration: TextDecoration.underline,
-                    ),
-                    recognizer: TapGestureRecognizer()
-                      ..onTap = () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => DepositReturnScreen(buildings: _buildings),
-                          ),
-                        );
-                      },
-                  ),
-                  const TextSpan(text: '/ '),
-                  TextSpan(
-                    text: unit.rent,
-                    style: const TextStyle(
-                      color: Colors.blue,
-                      decoration: TextDecoration.underline,
-                    ),
-                    recognizer: TapGestureRecognizer()
-                      ..onTap = () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => AnnualRentSummaryScreen(
-                              unit: unit,
-                              building: building,
-                            ),
-                          ),
-                        );
-                      },
-                  ),
-                ],
-              ),
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-        ],
-      ),
+  Widget _buildBottomNavigationBar() {
+    return BottomNavigationBar(
+      items: const <BottomNavigationBarItem>[
+        BottomNavigationBarItem(icon: Icon(Icons.home), label: '홈'),
+        BottomNavigationBarItem(icon: Icon(Icons.monetization_on), label: '캐쉬'),
+        BottomNavigationBarItem(icon: Icon(Icons.shopping_bag), label: '상품'),
+        BottomNavigationBarItem(icon: Icon(Icons.people), label: '커뮤니티'),
+        BottomNavigationBarItem(icon: Icon(Icons.campaign), label: '내집홍보'),
+      ],
+      currentIndex: 0,
+      selectedItemColor: Colors.blueAccent,
+      unselectedItemColor: Colors.grey,
+      onTap: _onItemTapped,
+      type: BottomNavigationBarType.fixed,
     );
   }
 }
