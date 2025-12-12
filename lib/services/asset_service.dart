@@ -3,9 +3,10 @@ import 'package:http/http.dart' as http;
 import 'package:project/models/asset_models.dart';
 
 class AssetService {
+  // 건물 데이터 가져오기 (서버 + 더미)
   Future<List<Building>> getBuildings() async {
-    // 1. 기존 더미 데이터 (로컬 데이터)
-    List<Building> buildings = [
+    // 1. 기존 더미 데이터 (복원됨)
+    List<Building> dummyBuildings = [
       Building(
           name: '강남 럭키빌딩',
           address: '서울시 강남구 테헤란로 123',
@@ -26,7 +27,10 @@ class AssetService {
       ]),
     ];
 
-    // 2. 서버 데이터 가져오기 (비동기)
+    // 2. 서버 데이터 가져오기
+    List<Building> serverBuildings = [];
+
+    // 로그인한 사용자 정보 (하드코딩)
     String ownerName = '김계화';
     String ownerBirth = '600720';
 
@@ -37,21 +41,73 @@ class AssetService {
       final response = await http.get(url);
 
       if (response.statusCode == 200) {
-        // 1. JSON 디코딩 (전체를 Map으로 받음)
         final Map<String, dynamic> responseData = jsonDecode(response.body);
 
-        // 2. 'data' 키 안에 있는 리스트를 가져옴
+        // 데이터가 있는지 확인 ('data' 키)
         if (responseData['data'] != null) {
           List<dynamic> jsonList = responseData['data'];
 
           for (var item in jsonList) {
-            if (item['building_name'] != null) {
-              buildings.add(Building(
-                name: item['building_name'].toString(),
-                address: item['road_address']?.toString() ?? '주소 미입력', // PHP 컬럼명에 맞춤
-                totalUnits: 0,
-                vacantUnits: 0,
-                units: [],
+            String buildingName = item['building_name']?.toString() ?? '건물명 미상';
+            String address = item['road_address']?.toString() ?? '주소 미입력';
+
+            // 호실(Unit) 정보 파싱
+            List<Unit> units = [];
+            if (item['units'] != null && item['units'] is List) {
+              for (var u in item['units']) {
+                String roomNum = u['room_number']?.toString() ?? '호수미상';
+                String area = u['area']?.toString() ?? '-';
+                String floorInfoJson = u['floor_info']?.toString() ?? '';
+
+                // floor_info JSON 파싱하여 비고란에 용도/층 표시
+                String note = '';
+                if (floorInfoJson.isNotEmpty) {
+                  try {
+                    List<dynamic> floors = jsonDecode(floorInfoJson);
+                    if (floors.isNotEmpty) {
+                      // 첫 번째 항목의 층과 용도 사용
+                      String f = floors[0]['floor'] ?? '';
+                      String use = floors[0]['usage'] ?? '';
+                      note = "$f $use";
+                    }
+                  } catch (_) {
+                    // JSON 파싱 실패 시 무시
+                  }
+                }
+                if (note.isEmpty) note = '전용면적: ${area}㎡';
+
+                units.add(Unit(
+                  roomNumber: roomNum,
+                  tenantName: '-', // 입주민 정보 없음
+                  isVacant: true,  // 기본 공실
+                  expiryDate: '-',
+                  deposit: '-',
+                  rent: '-',
+                  gender: '-',
+                  contact: '-',
+                  realty: '-',
+                  notes: note, // 비고에 층/용도 표시
+                  contractDate: '-',
+                  unpaidAmount: '0원',
+                  area: '$area㎡',
+                  moveInDate: '-',
+                  entrancePassword: '-',
+                  roomPassword: '-',
+                  hasAc: false, hasFridge: false, hasGasStove: false, hasWasher: false,
+                  hasTv: false, hasInternet: false, hasParking: false, hasElevator: false,
+                  depositStatus: DepositStatus.returned,
+                ));
+              }
+            }
+
+            // 호실이 없어도 건물 목록에 추가
+            if (buildingName != '건물명 미상') {
+              serverBuildings.add(Building(
+                name: buildingName,
+                address: address,
+                totalUnits: units.length,
+                vacantUnits: units.length,
+                units: units,
               ));
             }
           }
@@ -63,10 +119,11 @@ class AssetService {
       print('데이터 가져오기 실패: $e');
     }
 
-    return buildings;
+    // [중요] 서버 데이터 + 더미 데이터 합쳐서 반환
+    return [...serverBuildings, ...dummyBuildings];
   }
 
-  // PDF 업로드 로직
+  // 건물 PDF 업로드
   Future<String> uploadPdf(List<int> fileBytes, String fileName) async {
     try {
       var uri = Uri.parse('https://fms.iwin.kr/brother/ocr_pdf_upload.php');
@@ -81,7 +138,26 @@ class AssetService {
       var response = await request.send();
       return await response.stream.bytesToString();
     } catch (e) {
-      throw Exception('업로드 실패: $e');
+      throw Exception('건물 PDF 업로드 실패: $e');
+    }
+  }
+
+  // 호실 PDF 업로드
+  Future<String> uploadUnitPdf(List<int> fileBytes, String fileName) async {
+    try {
+      var uri = Uri.parse('https://fms.iwin.kr/brother/ocr_unit_pdf_upload.php');
+      var request = http.MultipartRequest('POST', uri);
+
+      request.files.add(http.MultipartFile.fromBytes(
+        'uploaded_file',
+        fileBytes,
+        filename: fileName,
+      ));
+
+      var response = await request.send();
+      return await response.stream.bytesToString();
+    } catch (e) {
+      throw Exception('호실 PDF 업로드 실패: $e');
     }
   }
 }

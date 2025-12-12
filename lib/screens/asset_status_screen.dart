@@ -41,15 +41,13 @@ class _AssetStatusScreenState extends State<AssetStatusScreen> {
   // 비동기로 데이터 불러오기
   Future<void> _loadBuildings() async {
     try {
-      // 서비스에서 데이터를 가져옴 (더미 + 서버)
       final buildings = await _assetService.getBuildings();
 
       if (!mounted) return;
       setState(() {
         _buildings = buildings;
-        _isLoading = false; // 로딩 완료
+        _isLoading = false;
 
-        // 데이터 로드 후 특정 건물로 이동해야 하는 경우 처리
         if (widget.buildingName != null) {
           final index = _buildings.indexWhere((b) => b.name == widget.buildingName);
           if (index != -1) {
@@ -63,7 +61,6 @@ class _AssetStatusScreenState extends State<AssetStatusScreen> {
         }
       });
     } catch (e) {
-      // 에러 처리
       if (!mounted) return;
       setState(() {
         _isLoading = false;
@@ -88,6 +85,7 @@ class _AssetStatusScreenState extends State<AssetStatusScreen> {
     _scrollController.animateTo(scrollPosition, duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
   }
 
+  // 자산(건물) PDF 추가
   Future<void> _addAssetFromPdf() async {
     Navigator.pop(context);
 
@@ -115,10 +113,48 @@ class _AssetStatusScreenState extends State<AssetStatusScreen> {
       if (!mounted) return;
       Navigator.pop(context);
 
-      // 업로드 성공 후 데이터 새로고침 (새로 추가된 건물을 보기 위해)
       await _loadBuildings();
 
-      _showAlert('업로드 완료', '서버 응답: $responseBody');
+      _showAlert('건물 업로드 완료', '서버 응답: $responseBody');
+    } catch (e) {
+      if (!mounted) return;
+      Navigator.pop(context);
+      _showAlert('오류', '파일 업로드 중 오류가 발생했습니다: $e');
+    }
+  }
+
+  // [추가됨] 호실(전유부) PDF 추가
+  Future<void> _addUnitFromPdf() async {
+    Navigator.pop(context); // 닫기
+
+    FilePickerResult? result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['pdf'],
+    );
+
+    if (result == null) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('파일 선택이 취소되었습니다.')));
+      return;
+    }
+
+    if (!mounted) return;
+    _showLoading();
+
+    try {
+      final fileBytes = result.files.single.bytes;
+      final fileName = result.files.single.name;
+
+      if (fileBytes == null) throw Exception('파일을 읽을 수 없습니다.');
+
+      // 호실용 업로드 서비스 호출
+      final responseBody = await _assetService.uploadUnitPdf(fileBytes, fileName);
+
+      if (!mounted) return;
+      Navigator.pop(context); // 로딩 닫기
+
+      await _loadBuildings(); // 데이터 갱신
+
+      _showAlert('호실 업로드 완료', '서버 응답: $responseBody');
     } catch (e) {
       if (!mounted) return;
       Navigator.pop(context);
@@ -178,6 +214,8 @@ class _AssetStatusScreenState extends State<AssetStatusScreen> {
             }),
             ListTile(leading: const Icon(Icons.add_business_outlined), title: const Text('자산추가'), onTap: _addAssetFromOcr),
             ListTile(leading: const Icon(Icons.picture_as_pdf_outlined), title: const Text('자산추가 (pdf)'), onTap: _addAssetFromPdf),
+            // [추가된 항목] 호실 추가 (pdf)
+            ListTile(leading: const Icon(Icons.post_add_outlined), title: const Text('호실 추가 (pdf)'), onTap: _addUnitFromPdf),
             ListTile(leading: const Icon(Icons.person_add_alt_1_outlined), title: const Text('임차인등록'), onTap: () => Navigator.pop(context)),
             ListTile(leading: const Icon(Icons.edit_outlined), title: const Text('자산수정'), onTap: () => Navigator.pop(context)),
             ListTile(leading: const Icon(Icons.edit_note_outlined), title: const Text('임대인수정'), onTap: () => Navigator.pop(context)),
@@ -196,14 +234,12 @@ class _AssetStatusScreenState extends State<AssetStatusScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // 로딩 중이면 로딩 표시
     if (_isLoading) {
       return const Scaffold(
         body: Center(child: CircularProgressIndicator()),
       );
     }
 
-    // 건물이 하나도 없을 때 처리
     if (_buildings.isEmpty) {
       return Scaffold(
         appBar: AppBar(title: const Text('장부관리')),
@@ -212,7 +248,6 @@ class _AssetStatusScreenState extends State<AssetStatusScreen> {
       );
     }
 
-    // 인덱스 안전장치
     if (_selectedBuildingIndex >= _buildings.length) {
       _selectedBuildingIndex = 0;
     }
@@ -267,7 +302,6 @@ class _AssetStatusScreenState extends State<AssetStatusScreen> {
             ],
             Text('${selectedBuilding.name} - 호실 현황 (${selectedBuilding.units.length}개)', style: TextStyle(fontSize: 18 * textScaleFactor, fontWeight: FontWeight.bold)),
             const SizedBox(height: 12),
-            // 호실이 없을 경우 안내 메시지
             if (selectedBuilding.units.isEmpty)
               Padding(
                 padding: const EdgeInsets.all(20.0),
