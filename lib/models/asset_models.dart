@@ -1,5 +1,3 @@
-import 'package:flutter/material.dart';
-
 enum DepositStatus { none, imminent, returned, partiallyReturned }
 
 class Unit {
