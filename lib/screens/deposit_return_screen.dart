@@ -37,7 +37,7 @@ class _DepositReturnScreenState extends State<DepositReturnScreen> {
     }
 
     tempItems.sort((a, b) {
-       try {
+      try {
         final dateA = DateTime.parse(a.expiryDate.replaceAll('년 ', '-').replaceAll('월 ', '-').replaceAll('일', ''));
         final dateB = DateTime.parse(b.expiryDate.replaceAll('년 ', '-').replaceAll('월 ', '-').replaceAll('일', ''));
         return _dateSortOrder == '최신순' ? dateB.compareTo(dateA) : dateA.compareTo(dateB);
@@ -71,6 +71,11 @@ class _DepositReturnScreenState extends State<DepositReturnScreen> {
         text = '부분반환';
         backgroundColor = Colors.orange.shade100;
         textColor = Colors.orange.shade800;
+        break;
+      case DepositStatus.none: // [수정] 정상 상태 처리 추가
+        text = '정상';
+        backgroundColor = Colors.grey.shade200;
+        textColor = Colors.grey.shade800;
         break;
     }
 
@@ -141,6 +146,7 @@ class _DepositReturnScreenState extends State<DepositReturnScreen> {
                       case DepositStatus.imminent: text = '임박'; break;
                       case DepositStatus.returned: text = '반환됨'; break;
                       case DepositStatus.partiallyReturned: text = '부분반환'; break;
+                      case DepositStatus.none: text = '정상'; break; // [수정] 필터 메뉴에 정상 상태 추가
                     }
                     return DropdownMenuItem(value: status, child: Text(text));
                   })],

@@ -31,8 +31,6 @@ class _EmptyRoomListScreenState extends State<EmptyRoomListScreen> {
 
   late List<EmptyRoomSummary> _filteredList;
   VacancyFilterType _activeFilter = VacancyFilterType.none;
-  RoomSortCriterion _sortCriterion = RoomSortCriterion.duration;
-  SortOrder _sortOrder = SortOrder.descending;
 
   @override
   void initState() {

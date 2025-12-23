@@ -67,12 +67,6 @@ class _AsBoardScreenState extends State<AsBoardScreen> {
     });
   }
 
-  void _stopSearch() {
-    setState(() {
-      _searchController.clear();
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(

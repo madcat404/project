@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'home_screen.dart';
 import 'cash_management_screen.dart'; // 1. 캐시 관리 화면 import
-import 'as_board_screen.dart';
 import 'notification_history_screen.dart';
 
 class HomePage extends StatefulWidget {

@@ -17,8 +17,8 @@ class AnnualRentSummaryScreen extends StatefulWidget {
   final bool isDeposit;
 
   const AnnualRentSummaryScreen({
-    super.key, 
-    required this.unit, 
+    super.key,
+    required this.unit,
     required this.building,
     this.isDeposit = false,
   });
@@ -54,7 +54,7 @@ class _AnnualRentSummaryScreenState extends State<AnnualRentSummaryScreen> {
       _currentYear += year;
     });
   }
-  
+
   Widget _buildYearSelector() {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
@@ -125,7 +125,7 @@ class _AnnualRentSummaryScreenState extends State<AnnualRentSummaryScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text('${widget.building.name} ${widget.unit.roomNumber}', style: Theme.of(context).textTheme.headlineSmall), 
+            Text('${widget.building.name} ${widget.unit.roomNumber}', style: Theme.of(context).textTheme.headlineSmall),
             const SizedBox(height: 8),
             Text('임차인: ${widget.unit.tenantName}', style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 24),
@@ -169,6 +169,11 @@ class _AnnualRentSummaryScreenState extends State<AnnualRentSummaryScreen> {
         text = '부분반환';
         backgroundColor = Colors.orange.shade100;
         textColor = Colors.orange.shade800;
+        break;
+      case DepositStatus.none: // [수정] 정상(none) 상태 추가
+        text = '정상';
+        backgroundColor = Colors.grey.shade200;
+        textColor = Colors.grey.shade800;
         break;
     }
 

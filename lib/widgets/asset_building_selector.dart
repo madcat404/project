@@ -1,13 +1,14 @@
-// 파일 경로: lib/widgets/asset_building_selector.dart
 import 'package:flutter/material.dart';
 import 'package:project/models/asset_models.dart';
+// [추가] 상세 화면 연결을 위해 import
+import 'package:project/screens/asset_building_details_screen.dart';
 
 class AssetBuildingSelector extends StatelessWidget {
   final List<Building> buildings;
   final int selectedIndex;
   final Function(int) onSelected;
   final ScrollController scrollController;
-  final bool isLandscape;
+  final double scaleFactor;
 
   const AssetBuildingSelector({
     super.key,
@@ -15,12 +16,12 @@ class AssetBuildingSelector extends StatelessWidget {
     required this.selectedIndex,
     required this.onSelected,
     required this.scrollController,
-    required this.isLandscape,
+    required this.scaleFactor,
   });
 
   @override
   Widget build(BuildContext context) {
-    final double textScaleFactor = isLandscape ? 1.2 : 1.0;
+    final double textScaleFactor = scaleFactor;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -35,7 +36,7 @@ class AssetBuildingSelector extends StatelessWidget {
             ),
             Expanded(
               child: SizedBox(
-                height: 100 * textScaleFactor,
+                height: 130 * textScaleFactor,
                 child: ListView.separated(
                   controller: scrollController,
                   scrollDirection: Axis.horizontal,
@@ -44,6 +45,8 @@ class AssetBuildingSelector extends StatelessWidget {
                   itemBuilder: (context, index) {
                     final building = buildings[index];
                     final isSelected = index == selectedIndex;
+
+                    // 카드 전체 클릭 시: 하단 리스트 갱신 (선택)
                     return InkWell(
                       onTap: () => onSelected(index),
                       child: Card(
@@ -54,25 +57,73 @@ class AssetBuildingSelector extends StatelessWidget {
                           side: isSelected ? BorderSide(color: Colors.blue.shade300, width: 2) : BorderSide.none,
                         ),
                         child: Container(
-                          width: 200 * textScaleFactor,
-                          padding: const EdgeInsets.all(16.0),
+                          width: 220 * textScaleFactor,
+                          padding: EdgeInsets.all(16.0 * textScaleFactor),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Text(building.name, style: TextStyle(fontSize: 16 * textScaleFactor, fontWeight: FontWeight.bold)),
-                              const Spacer(),
-                              Text(building.address, style: TextStyle(fontSize: 12 * textScaleFactor, color: Colors.grey[600]), overflow: TextOverflow.ellipsis),
-                              Text.rich(
-                                TextSpan(
-                                  style: TextStyle(fontSize: 12 * textScaleFactor, color: Colors.grey[600]),
+                              // [수정] 건물명 부분을 클릭하면 상세페이지로 이동
+                              InkWell(
+                                onTap: () {
+                                  // 상세 화면으로 이동
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => AssetBuildingDetailsScreen(building: building),
+                                    ),
+                                  );
+                                },
+                                child: Row(
                                   children: [
-                                    const TextSpan(text: '총 '),
-                                    TextSpan(text: '${building.totalUnits}', style: const TextStyle(color: Colors.blueAccent, fontWeight: FontWeight.bold)),
-                                    const TextSpan(text: '호실 / 공실 '),
-                                    TextSpan(text: '${building.vacantUnits}', style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold))
+                                    Icon(Icons.business, size: 20 * textScaleFactor, color: isSelected ? Colors.blueAccent : Colors.grey),
+                                    SizedBox(width: 8 * textScaleFactor),
+                                    Expanded(
+                                      child: Text(
+                                          building.name,
+                                          style: TextStyle(
+                                            fontSize: 16 * textScaleFactor,
+                                            fontWeight: FontWeight.bold,
+                                            decoration: TextDecoration.underline, // 클릭 가능함을 암시
+                                            decorationColor: Colors.grey[400],
+                                            decorationStyle: TextDecorationStyle.dotted,
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis
+                                      ),
+                                    ),
+                                    // 이동 아이콘 추가
+                                    Icon(Icons.arrow_circle_right_outlined, size: 18 * textScaleFactor, color: Colors.blueAccent),
                                   ],
                                 ),
-                              )
+                              ),
+
+                              // 주소 및 호실 정보 (여기는 클릭해도 상세로 안 가고 선택만 됨)
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                      building.address,
+                                      style: TextStyle(fontSize: 12 * textScaleFactor, color: Colors.grey[600]),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis
+                                  ),
+                                  SizedBox(height: 4 * textScaleFactor),
+                                  Text.rich(
+                                    TextSpan(
+                                      style: TextStyle(fontSize: 12 * textScaleFactor, color: Colors.grey[600]),
+                                      children: [
+                                        const TextSpan(text: '총 '),
+                                        TextSpan(text: '${building.totalUnits}', style: const TextStyle(color: Colors.blueAccent, fontWeight: FontWeight.bold)),
+                                        const TextSpan(text: '호실 / 공실 '),
+                                        TextSpan(text: '${building.vacantUnits}', style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold))
+                                      ],
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  )
+                                ],
+                              ),
                             ],
                           ),
                         ),

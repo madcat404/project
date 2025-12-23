@@ -41,10 +41,6 @@ class _UnpaidListScreenState extends State<UnpaidListScreen> with SingleTickerPr
   late List<MoveOutSummary> _moveOutUnpaidList;
   bool _isSelectionMode = false;
   final Set<dynamic> _selectedItems = {};
-  SortCriterion _unpaidSortCriterion = SortCriterion.paymentDate;
-  SortOrder _unpaidSortOrder = SortOrder.descending;
-  SortCriterion _moveOutSortCriterion = SortCriterion.daysLeft;
-  SortOrder _moveOutSortOrder = SortOrder.ascending;
 
   @override
   void initState() {
@@ -84,7 +80,6 @@ class _UnpaidListScreenState extends State<UnpaidListScreen> with SingleTickerPr
   }
 
   void _onItemTapped(int index) => Navigator.of(context).pushAndRemoveUntil(MaterialPageRoute(builder: (context) => HomePage(initialIndex: index)),(Route<dynamic> route) => false,);
-  void _showSentConfirmationDialog() { /* ... */ }
   void _showNotificationMethodDialog() { /* ... */ }
   void _handleSendNotification() { /* ... */ }
   void _showSortDialog() { /* ... */ }

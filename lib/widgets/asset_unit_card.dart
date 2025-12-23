@@ -2,7 +2,7 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:project/models/asset_models.dart';
-import 'package:project/screens/unit_detail_screen.dart';
+import 'package:project/screens/asset_unit_detail_screen.dart';
 import 'package:project/screens/annual_rent_summary_screen.dart';
 import 'package:project/screens/deposit_return_screen.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -10,20 +10,52 @@ import 'package:url_launcher/url_launcher.dart';
 class AssetUnitCard extends StatelessWidget {
   final Unit unit;
   final Building building;
-  final bool isLandscape;
+  final double scaleFactor;
   final List<Building> allBuildings;
 
   const AssetUnitCard({
     super.key,
     required this.unit,
     required this.building,
-    required this.isLandscape,
+    required this.scaleFactor,
     required this.allBuildings,
   });
 
+  // [추가] 화면 표시 전용 포맷팅 함수 (100000000 -> 1억)
+  String _formatCurrency(String? value) {
+    if (value == null || value.isEmpty || value == '-') return '-';
+    String cleanValue = value.replaceAll(RegExp(r'[^0-9]'), '');
+    if (cleanValue.isEmpty) return value; // 숫자가 아니면 그대로 표시
+
+    try {
+      double number = double.parse(cleanValue);
+      if (number == 0) return '0원';
+      int amount = number.toInt();
+      int uk = amount ~/ 100000000;
+      int remainderUk = amount % 100000000;
+      int man = remainderUk ~/ 10000;
+      int remainderMan = remainderUk % 10000;
+
+      String result = '';
+      if (uk > 0) result += '$uk억';
+      if (man > 0) {
+        if (result.isNotEmpty) result += ' ';
+        result += '$man만원';
+      }
+      if (remainderMan > 0) {
+        if (result.isNotEmpty) result += ' ';
+        result += '${remainderMan}원';
+      }
+      if (result.isEmpty) return '$amount원';
+      return result;
+    } catch (e) {
+      return value;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final double textScaleFactor = isLandscape ? 1.2 : 1.0;
+    final double textScaleFactor = scaleFactor;
     final statusColor = unit.isVacant ? Colors.red : Colors.green;
 
     IconData genderIcon;
@@ -159,13 +191,15 @@ class AssetUnitCard extends StatelessWidget {
                 style: TextStyle(fontSize: 13 * scale, color: Colors.black),
                 children: [
                   TextSpan(
-                    text: '${unit.deposit} ',
+                    // [수정] 화면에 보여줄 때만 포맷팅 적용
+                    text: '${_formatCurrency(unit.deposit)} ',
                     style: const TextStyle(color: Colors.blue, decoration: TextDecoration.underline),
                     recognizer: TapGestureRecognizer()..onTap = () => Navigator.push(context, MaterialPageRoute(builder: (context) => DepositReturnScreen(buildings: allBuildings))),
                   ),
                   const TextSpan(text: '/ '),
                   TextSpan(
-                    text: unit.rent,
+                    // [수정] 화면에 보여줄 때만 포맷팅 적용
+                    text: _formatCurrency(unit.rent),
                     style: const TextStyle(color: Colors.blue, decoration: TextDecoration.underline),
                     recognizer: TapGestureRecognizer()..onTap = () => Navigator.push(context, MaterialPageRoute(builder: (context) => AnnualRentSummaryScreen(unit: unit, building: building))),
                   ),
@@ -179,6 +213,7 @@ class AssetUnitCard extends StatelessWidget {
     );
   }
 
+  // ... (나머지 아이콘 관련 코드는 동일) ...
   Widget _buildAmenityIcon(IconData icon, bool isAvailable, String name, double scale) {
     return Tooltip(
       message: name,
