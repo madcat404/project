@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
 
 // 공실 상세 정보를 담는 데이터 모델 클래스
+// 리스트 화면(empty_room_list_screen.dart)의 fromJson에서 생성하는 구조와 일치시켰습니다.
 class EmptyRoomDetail {
   // 1. 기본 정보 및 현황
   final String propertyAddress;
   final String propertyType;
-  final String vacancyStartDate;
   final String vacancyDuration;
   final String desiredLeaseCondition;
+
+  // 리스트 화면에서 '-'로 넘겨주고 있지만, 향후 DB 연결 시 데이터를 표시할 필드들입니다.
+  final String vacancyStartDate;
   final String previousLeaseCondition;
 
   // 2. 물건 상태 및 유지보수
@@ -39,11 +42,12 @@ class EmptyRoomDetail {
   final String securityChecks;
 
   const EmptyRoomDetail({
+    // buildingName, roomNumber는 리스트 화면에서 넘겨주지 않으므로 제거했습니다.
     required this.propertyAddress,
     required this.propertyType,
-    required this.vacancyStartDate,
     required this.vacancyDuration,
     required this.desiredLeaseCondition,
+    required this.vacancyStartDate,
     required this.previousLeaseCondition,
     required this.cleaningStatus,
     required this.wallpaperStatus,
@@ -77,7 +81,7 @@ class EmptyRoomDetailScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(detail.propertyAddress),
+        title: const Text('공실 상세 정보'),
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
         elevation: 0,

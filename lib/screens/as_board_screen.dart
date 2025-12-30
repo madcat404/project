@@ -1,118 +1,223 @@
 import 'package:flutter/material.dart';
-import 'package:project/screens/as_write_screen.dart';
-import 'package:project/screens/as_detail_screen.dart';
-
-class Post {
-  final int id;
-  final String title;
-  final String content;
-  final String author;
-  final DateTime date;
-  int views;
-  final int comments;
-
-  Post({
-    required this.id,
-    required this.title,
-    required this.content,
-    required this.author,
-    required this.date,
-    this.views = 0,
-    this.comments = 0,
-  });
-}
+import 'package:intl/intl.dart';
+import '../models/as_models.dart'; // 모델
+import '../services/as_service.dart'; // 서비스
+import 'as_detail_screen.dart'; // [추가됨] 상세 화면 import
 
 class AsBoardScreen extends StatefulWidget {
-  const AsBoardScreen({super.key});
+  const AsBoardScreen({Key? key}) : super(key: key);
 
   @override
   State<AsBoardScreen> createState() => _AsBoardScreenState();
 }
 
 class _AsBoardScreenState extends State<AsBoardScreen> {
-  final List<Post> _posts = [
-    Post(id: 1, title: '첫 번째 게시물', content: '내용입니다.', author: '김철수', date: DateTime.now().subtract(const Duration(days: 1)), views: 15, comments: 5),
-    Post(id: 2, title: '두 번째 게시물', content: '내용입니다.2', author: '이영희', date: DateTime.now().subtract(const Duration(hours: 5)), views: 23, comments: 12),
-    Post(id: 3, title: '세 번째 게시물', content: '내용입니다.3', author: '박지민', date: DateTime.now().subtract(const Duration(minutes: 30)), views: 8, comments: 2),
-  ];
-
-  late List<Post> _filteredPosts;
-  final TextEditingController _searchController = TextEditingController();
+  List<AsRequest> _requests = [];
+  List<AsRequest> _filteredRequests = [];
+  bool _isLoading = true;
+  String _selectedStatus = '전체';
 
   @override
   void initState() {
     super.initState();
-    _filteredPosts = _posts;
-    _searchController.addListener(_filterPosts);
+    _loadData();
   }
 
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
+  Future<void> _loadData() async {
+    try {
+      List<AsRequest> data = await AsService.getAsRequests();
+      if (mounted) {
+        setState(() {
+          _requests = data;
+          _applyFilter();
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() { _isLoading = false; });
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+      }
+    }
   }
 
-  void _filterPosts() {
-    final query = _searchController.text.toLowerCase();
+  void _applyFilter() {
     setState(() {
-      _filteredPosts = _posts.where((post) {
-        return post.title.toLowerCase().contains(query) || 
-               post.author.toLowerCase().contains(query);
-      }).toList();
+      if (_selectedStatus == '전체') {
+        _filteredRequests = _requests;
+      } else {
+        _filteredRequests = _requests.where((item) => item.status == _selectedStatus).toList();
+      }
     });
   }
 
-  void _startSearch() {
+  void _onFilterChanged(String status) {
     setState(() {
+      _selectedStatus = status;
+      _applyFilter();
     });
+  }
+
+  Color _getStatusColor(String status) {
+    switch (status) {
+      case '접수': return Colors.redAccent;
+      case '진행중': return Colors.orangeAccent;
+      case '완료': return Colors.green;
+      default: return Colors.grey;
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFF5F5F5),
       appBar: AppBar(
-        title: const Text('A/S 게시판'),
+        title: const Text('수리 요청 현황', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+        backgroundColor: Colors.white,
+        elevation: 1,
+        iconTheme: const IconThemeData(color: Colors.black),
         actions: [
-          IconButton(icon: const Icon(Icons.search), onPressed: _startSearch),
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: () {
+              setState(() { _isLoading = true; });
+              _loadData();
+            },
+          ),
         ],
       ),
-      body: ListView.separated(
-        itemCount: _filteredPosts.length,
-        separatorBuilder: (context, index) => const Divider(),
-        itemBuilder: (context, index) {
-          final post = _filteredPosts[index];
-          return ListTile(
-            title: Text(post.title),
-            subtitle: Text('${post.author} | ${post.date.toString().substring(0, 10)}'),
-            trailing: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text('조회 ${post.views}'),
-                Text('댓글 ${post.comments}'),
-              ],
+      body: Column(
+        children: [
+          // 1. 필터링 버튼 (Segmented Control 스타일)
+          Container(
+            margin: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+            padding: const EdgeInsets.all(4),
+            decoration: BoxDecoration(
+              color: Colors.grey[200],
+              borderRadius: BorderRadius.circular(25),
             ),
-            onTap: () async {
-              final result = await Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => AsDetailScreen(post: post),
-                ),
-              );
+            child: Row(
+              children: ['전체', '접수', '진행중', '완료'].map((status) {
+                final isSelected = _selectedStatus == status;
 
-              if (result == true) {
-                setState(() {
-                  post.views++;
-                });
-              }
-            },
-          );
-        },
+                return Expanded(
+                  child: GestureDetector(
+                    onTap: () => _onFilterChanged(status),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      decoration: isSelected
+                          ? BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            blurRadius: 4,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      )
+                          : null,
+                      child: Text(
+                        status,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                          color: isSelected ? Colors.black : Colors.grey[600],
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+
+          // 2. 리스트 영역
+          Expanded(
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : _filteredRequests.isEmpty
+                ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.search_off, size: 50, color: Colors.grey),
+                  const SizedBox(height: 10),
+                  Text(
+                    '$_selectedStatus 내역이 없습니다.',
+                    style: const TextStyle(fontSize: 16, color: Colors.grey),
+                  ),
+                ],
+              ),
+            )
+                : RefreshIndicator(
+              onRefresh: _loadData,
+              child: ListView.builder(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                itemCount: _filteredRequests.length,
+                itemBuilder: (context, index) {
+                  return _buildAsCard(_filteredRequests[index]);
+                },
+              ),
+            ),
+          ),
+        ],
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.push(context, MaterialPageRoute(builder: (context) => AsWriteScreen()));
+    );
+  }
+
+  Widget _buildAsCard(AsRequest item) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 16),
+      elevation: 2,
+      color: Colors.white,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: InkWell(
+        // [수정됨] 클릭 시 상세 화면으로 이동 복구
+        onTap: () {
+          Navigator.push(context, MaterialPageRoute(builder: (context) => AsDetailScreen(item: item)));
         },
-        child: const Icon(Icons.add),
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(color: Colors.grey[100], borderRadius: BorderRadius.circular(4)),
+                    child: Text(item.roomNumber, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: _getStatusColor(item.status).withOpacity(0.1),
+                      border: Border.all(color: _getStatusColor(item.status)),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(item.status, style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: _getStatusColor(item.status))),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Text(item.title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold), maxLines: 1, overflow: TextOverflow.ellipsis),
+              const SizedBox(height: 8),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text('작성자: ${item.author}', style: TextStyle(fontSize: 14, color: Colors.grey[600])),
+                  Text(DateFormat('yyyy-MM-dd').format(item.date), style: TextStyle(fontSize: 14, color: Colors.grey[500])),
+                ],
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

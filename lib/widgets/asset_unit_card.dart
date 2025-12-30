@@ -2,7 +2,7 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:project/models/asset_models.dart';
-import 'package:project/screens/asset_unit_detail_screen.dart';
+import 'package:project/screens/asset_unit_detail_screen.dart'; // [주의] 파일명 확인 (unit_detail_screen.dart 인지 asset_unit_detail_screen.dart 인지)
 import 'package:project/screens/annual_rent_summary_screen.dart';
 import 'package:project/screens/deposit_return_screen.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -13,19 +13,23 @@ class AssetUnitCard extends StatelessWidget {
   final double scaleFactor;
   final List<Building> allBuildings;
 
+  // [추가] 새로고침 콜백 함수
+  final VoidCallback? onRefresh;
+
   const AssetUnitCard({
     super.key,
     required this.unit,
     required this.building,
     required this.scaleFactor,
     required this.allBuildings,
+    this.onRefresh, // [추가] 생성자에 포함
   });
 
-  // [추가] 화면 표시 전용 포맷팅 함수 (100000000 -> 1억)
+  // [유지] 화면 표시 전용 포맷팅 함수
   String _formatCurrency(String? value) {
     if (value == null || value.isEmpty || value == '-') return '-';
     String cleanValue = value.replaceAll(RegExp(r'[^0-9]'), '');
-    if (cleanValue.isEmpty) return value; // 숫자가 아니면 그대로 표시
+    if (cleanValue.isEmpty) return value;
 
     try {
       double number = double.parse(cleanValue);
@@ -87,9 +91,21 @@ class AssetUnitCard extends StatelessWidget {
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    _buildIconButton(context, Icons.info_outline, '상세보기', () {
-                      Navigator.push(context, MaterialPageRoute(builder: (context) => UnitDetailScreen(unit: unit, building: building)));
+                    // [수정] 상세보기 버튼 로직 변경
+                    _buildIconButton(context, Icons.info_outline, '상세보기', () async {
+                      // 상세 화면으로 이동하고 결과를 기다림
+                      final result = await Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => UnitDetailScreen(unit: unit, building: building))
+                      );
+
+                      // 데이터가 변경되었다면(true 반환), 새로고침 실행
+                      if (result == true && onRefresh != null) {
+                        print('데이터 변경 감지됨: 새로고침 실행');
+                        onRefresh!();
+                      }
                     }, textScaleFactor),
+
                     _buildIconButton(context, Icons.campaign, '부동산에 공실 알림', () => _showRealEstateNotificationDialog(context), textScaleFactor),
                   ],
                 ),
@@ -191,14 +207,12 @@ class AssetUnitCard extends StatelessWidget {
                 style: TextStyle(fontSize: 13 * scale, color: Colors.black),
                 children: [
                   TextSpan(
-                    // [수정] 화면에 보여줄 때만 포맷팅 적용
                     text: '${_formatCurrency(unit.deposit)} ',
                     style: const TextStyle(color: Colors.blue, decoration: TextDecoration.underline),
                     recognizer: TapGestureRecognizer()..onTap = () => Navigator.push(context, MaterialPageRoute(builder: (context) => DepositReturnScreen(buildings: allBuildings))),
                   ),
                   const TextSpan(text: '/ '),
                   TextSpan(
-                    // [수정] 화면에 보여줄 때만 포맷팅 적용
                     text: _formatCurrency(unit.rent),
                     style: const TextStyle(color: Colors.blue, decoration: TextDecoration.underline),
                     recognizer: TapGestureRecognizer()..onTap = () => Navigator.push(context, MaterialPageRoute(builder: (context) => AnnualRentSummaryScreen(unit: unit, building: building))),
@@ -213,7 +227,6 @@ class AssetUnitCard extends StatelessWidget {
     );
   }
 
-  // ... (나머지 아이콘 관련 코드는 동일) ...
   Widget _buildAmenityIcon(IconData icon, bool isAvailable, String name, double scale) {
     return Tooltip(
       message: name,

@@ -1,26 +1,61 @@
 import 'package:flutter/material.dart';
-import 'package:project/screens/as_board_screen.dart';
+import 'package:intl/intl.dart';
+import '../models/as_models.dart'; // 모델 파일 import
 
 class AsDetailScreen extends StatelessWidget {
-  final Post post;
+  final AsRequest item;
 
-  const AsDetailScreen({super.key, required this.post});
+  const AsDetailScreen({super.key, required this.item});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(post.title),
+        title: const Text('요청 상세 내용'),
+        backgroundColor: Colors.white,
+        iconTheme: const IconThemeData(color: Colors.black),
+        elevation: 1,
+        titleTextStyle: const TextStyle(color: Colors.black, fontSize: 20, fontWeight: FontWeight.bold),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(20.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('작성자: ${post.author}'),
-            Text('작성일: ${post.date.toString().substring(0, 10)}'),
+            // 1. 제목
+            Text(
+              item.title,
+              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 16),
+
+            // 2. 작성자, 날짜, 호수 정보
+            Row(
+              children: [
+                const Icon(Icons.person, size: 16, color: Colors.grey),
+                const SizedBox(width: 4),
+                Text(item.author, style: const TextStyle(color: Colors.grey, fontSize: 14)),
+                const SizedBox(width: 16),
+                const Icon(Icons.calendar_today, size: 16, color: Colors.grey),
+                const SizedBox(width: 4),
+                Text(DateFormat('yyyy-MM-dd').format(item.date), style: const TextStyle(color: Colors.grey, fontSize: 14)),
+                const Spacer(),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(color: Colors.grey[200], borderRadius: BorderRadius.circular(4)),
+                  child: Text(item.roomNumber, style: const TextStyle(fontWeight: FontWeight.bold)),
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
             const Divider(),
-            Text(post.content),
+            const SizedBox(height: 24),
+
+            // 3. 본문 내용
+            Text(
+              item.content,
+              style: const TextStyle(fontSize: 16, height: 1.6),
+            ),
           ],
         ),
       ),

@@ -32,7 +32,7 @@ class _AssetBuildingDetailsScreenState extends State<AssetBuildingDetailsScreen>
     final String address = widget.building.address;
 
     // ★ 서버 주소 (본인의 도메인으로 변경 확인)
-    final String url = "https://fms.iwin.kr/brother/get_building_detail.php?address=${Uri.encodeComponent(address)}";
+    final String url = "https://fms.iwin.kr/brother/asset_building_detail.php?address=${Uri.encodeComponent(address)}";
 
     try {
       debugPrint("API 호출: $url"); // 디버깅용 로그

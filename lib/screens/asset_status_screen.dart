@@ -6,7 +6,7 @@ import 'package:project/models/asset_models.dart';
 import 'package:project/services/asset_service.dart';
 import 'package:project/widgets/asset_building_selector.dart';
 import 'package:project/widgets/asset_unit_card.dart';
-import 'package:project/screens/asset_building_details_screen.dart'; // [추가] 상세 화면 import
+import 'package:project/screens/asset_building_details_screen.dart';
 
 class AssetStatusScreen extends StatefulWidget {
   final String? buildingName;
@@ -34,8 +34,10 @@ class _AssetStatusScreenState extends State<AssetStatusScreen> {
     _loadBuildings();
   }
 
+  // 데이터 로드 함수
   Future<void> _loadBuildings() async {
     try {
+      // [수정 포인트] AssetService가 URL에 timestamp를 붙여서 요청하므로 최신 데이터를 가져옴
       final buildings = await _assetService.getBuildings();
 
       if (!mounted) return;
@@ -114,8 +116,6 @@ class _AssetStatusScreenState extends State<AssetStatusScreen> {
   void _showAlert(String title, String content) {
     showDialog(context: context, builder: (ctx) => AlertDialog(title: Text(title), content: SingleChildScrollView(child: Text(content)), actions: [TextButton(child: const Text('확인'), onPressed: () => Navigator.pop(ctx))]));
   }
-
-  // [수정] 팝업 다이얼로그 함수(_showBuildingInfoDialog) 제거하고, 바로 네비게이션으로 대체할 예정
 
   void _showAssetMoreOptions() {
     showModalBottomSheet(
@@ -201,15 +201,17 @@ class _AssetStatusScreenState extends State<AssetStatusScreen> {
               const SizedBox(height: 24),
             ],
 
-            // [수정] 클릭 시 AssetBuildingDetailsScreen 이동
+            // [수정] 건물 상세보기 클릭 시에도 돌아오면 새로고침 적용
             InkWell(
-              onTap: () {
-                Navigator.push(
+              onTap: () async {
+                await Navigator.push(
                     context,
                     MaterialPageRoute(
                         builder: (context) => AssetBuildingDetailsScreen(building: selectedBuilding)
                     )
                 );
+                // 돌아오면 데이터 갱신
+                _loadBuildings();
               },
               borderRadius: BorderRadius.circular(8),
               child: Padding(
@@ -225,7 +227,7 @@ class _AssetStatusScreenState extends State<AssetStatusScreen> {
                     const SizedBox(width: 4),
                     Text('(${selectedBuilding.units.length}개)', style: TextStyle(fontSize: 18 * _scaleFactor)),
                     const Spacer(),
-                    Icon(Icons.arrow_forward_ios, size: 16 * _scaleFactor, color: Colors.grey), // [변경] 이동 표시 아이콘
+                    Icon(Icons.arrow_forward_ios, size: 16 * _scaleFactor, color: Colors.grey),
                   ],
                 ),
               ),
@@ -241,10 +243,12 @@ class _AssetStatusScreenState extends State<AssetStatusScreen> {
                 itemCount: selectedBuilding.units.length,
                 separatorBuilder: (ctx, i) => const SizedBox(height: 10),
                 itemBuilder: (ctx, i) => AssetUnitCard(
-                    unit: selectedBuilding.units[i],
-                    building: selectedBuilding,
-                    scaleFactor: _scaleFactor,
-                    allBuildings: _buildings
+                  unit: selectedBuilding.units[i],
+                  building: selectedBuilding,
+                  scaleFactor: _scaleFactor,
+                  allBuildings: _buildings,
+                  // [핵심 수정] 카드가 "새로고침이 필요해!"라고 하면 _loadBuildings()를 실행
+                  onRefresh: () => _loadBuildings(),
                 ),
               ),
           ],
