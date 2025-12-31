@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:project/screens/home_page.dart';
 import 'package:project/models/asset_models.dart';
 import 'package:project/services/asset_service.dart';
 import 'package:project/widgets/asset_building_selector.dart';
 import 'package:project/widgets/asset_unit_card.dart';
 import 'package:project/screens/asset_building_details_screen.dart';
+// [추가 1] 하단 탭 클릭 시 메인 페이지로 이동하기 위해 import
+import 'package:project/screens/home_page.dart';
 
 class AssetStatusScreen extends StatefulWidget {
   final String? buildingName;
@@ -37,7 +38,6 @@ class _AssetStatusScreenState extends State<AssetStatusScreen> {
   // 데이터 로드 함수
   Future<void> _loadBuildings() async {
     try {
-      // [수정 포인트] AssetService가 URL에 timestamp를 붙여서 요청하므로 최신 데이터를 가져옴
       final buildings = await _assetService.getBuildings();
 
       if (!mounted) return;
@@ -134,8 +134,12 @@ class _AssetStatusScreenState extends State<AssetStatusScreen> {
     );
   }
 
+  // [추가 2] 하단 탭 클릭 시 HomePage로 이동하며 해당 탭 열기 (미납관리와 동일 로직)
   void _onItemTapped(int index) {
-    Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (ctx) => HomePage(initialIndex: index)), (route) => false);
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (context) => HomePage(initialIndex: index)),
+          (Route<dynamic> route) => false,
+    );
   }
 
   void _cycleScale() {
@@ -154,6 +158,7 @@ class _AssetStatusScreenState extends State<AssetStatusScreen> {
   Widget build(BuildContext context) {
     if (_isLoading) return const Scaffold(body: Center(child: CircularProgressIndicator()));
 
+    // 건물이 없을 때
     if (_buildings.isEmpty) {
       return Scaffold(
         appBar: AppBar(
@@ -161,6 +166,7 @@ class _AssetStatusScreenState extends State<AssetStatusScreen> {
           actions: [IconButton(icon: const Icon(Icons.more_vert), onPressed: _showAssetMoreOptions)],
         ),
         body: const Center(child: Text("등록된 건물이 없습니다.")),
+        // [추가 3] 여기에도 하단 바 추가
         bottomNavigationBar: _buildBottomNavigationBar(),
       );
     }
@@ -201,7 +207,6 @@ class _AssetStatusScreenState extends State<AssetStatusScreen> {
               const SizedBox(height: 24),
             ],
 
-            // [수정] 건물 상세보기 클릭 시에도 돌아오면 새로고침 적용
             InkWell(
               onTap: () async {
                 await Navigator.push(
@@ -210,7 +215,6 @@ class _AssetStatusScreenState extends State<AssetStatusScreen> {
                         builder: (context) => AssetBuildingDetailsScreen(building: selectedBuilding)
                     )
                 );
-                // 돌아오면 데이터 갱신
                 _loadBuildings();
               },
               borderRadius: BorderRadius.circular(8),
@@ -247,17 +251,18 @@ class _AssetStatusScreenState extends State<AssetStatusScreen> {
                   building: selectedBuilding,
                   scaleFactor: _scaleFactor,
                   allBuildings: _buildings,
-                  // [핵심 수정] 카드가 "새로고침이 필요해!"라고 하면 _loadBuildings()를 실행
                   onRefresh: () => _loadBuildings(),
                 ),
               ),
           ],
         ),
       ),
+      // [추가 3] 하단 바 추가
       bottomNavigationBar: _buildBottomNavigationBar(),
     );
   }
 
+  // [추가 4] 미납관리와 똑같은 하단 바 생성 함수
   Widget _buildBottomNavigationBar() {
     return BottomNavigationBar(
       items: const [
@@ -267,8 +272,9 @@ class _AssetStatusScreenState extends State<AssetStatusScreen> {
         BottomNavigationBarItem(icon: Icon(Icons.people), label: '커뮤니티'),
         BottomNavigationBarItem(icon: Icon(Icons.campaign), label: '내집홍보'),
       ],
+      // currentIndex는 '홈(0)'으로 설정하여 홈 탭의 연장선상에 있음을 보여줍니다.
       currentIndex: 0,
-      selectedItemColor: Colors.blueAccent,
+      selectedItemColor: Colors.deepPurple.shade400,
       unselectedItemColor: Colors.grey,
       onTap: _onItemTapped,
       type: BottomNavigationBarType.fixed,

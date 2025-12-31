@@ -8,10 +8,7 @@ import 'package:http/http.dart' as http;
 class EmptyRoomSummary {
   final String buildingName, roomNumber, propertyType, vacancyDuration, leaseCondition;
   final String deposit, monthlyRent;
-
-  // [1] 변경: DB에서 가져온 공실 발생일(contract_end_date)을 저장할 변수 추가
   final String contractEndDate;
-
   final EmptyRoomDetail detail;
 
   const EmptyRoomSummary({
@@ -22,7 +19,7 @@ class EmptyRoomSummary {
     required this.leaseCondition,
     required this.deposit,
     required this.monthlyRent,
-    required this.contractEndDate, // [1-1] 생성자 추가
+    required this.contractEndDate,
     required this.detail,
   });
 
@@ -33,8 +30,6 @@ class EmptyRoomSummary {
     String roomNumberVal = json['room_number']?.toString() ?? '정보 없음';
     String durationVal = json['vacancy_duration']?.toString() ?? '0일';
     String leaseVal = json['lease_condition']?.toString() ?? '$depositVal / $rentVal';
-
-    // [2] 변경: JSON에서 contract_end_date를 가져옵니다.
     String endDateVal = json['contract_end_date']?.toString() ?? '-';
 
     return EmptyRoomSummary(
@@ -45,13 +40,13 @@ class EmptyRoomSummary {
       leaseCondition: leaseVal,
       deposit: depositVal,
       monthlyRent: rentVal,
-      contractEndDate: endDateVal, // [2-1] 변수에 할당
+      contractEndDate: endDateVal,
       detail: EmptyRoomDetail(
         propertyAddress: roomNumberVal,
         propertyType: json['property_type']?.toString() ?? '주거',
         vacancyDuration: durationVal,
         desiredLeaseCondition: leaseVal,
-        vacancyStartDate: endDateVal, // [2-2] 내부 detail 객체에도 연결
+        vacancyStartDate: endDateVal,
         previousLeaseCondition: '-',
         cleaningStatus: '-',
         wallpaperStatus: '-', mainOptions: '-', repairHistory: '-',
@@ -66,7 +61,7 @@ class EmptyRoomSummary {
   }
 }
 
-// 필터 타입을 정의합니다.
+// 필터 타입 정의
 enum VacancyFilterType { all, recent, longterm }
 
 class EmptyRoomListScreen extends StatefulWidget {
@@ -78,7 +73,7 @@ class EmptyRoomListScreen extends StatefulWidget {
 }
 
 class _EmptyRoomListScreenState extends State<EmptyRoomListScreen> {
-  // 숫자에 천 단위 콤마를 추가하는 함수입니다.
+  // 천 단위 콤마 함수
   String formatCurrency(String value) {
     if (value == '0' || value.isEmpty) return '0';
     String numericOnly = value.replaceAll(RegExp(r'[^0-9]'), '');
@@ -103,7 +98,6 @@ class _EmptyRoomListScreenState extends State<EmptyRoomListScreen> {
       if (response.statusCode == 200) {
         final decodedBody = utf8.decode(response.bodyBytes);
         final List<dynamic> data = json.decode(decodedBody);
-
         return data.map((item) => EmptyRoomSummary.fromJson(item)).toList();
       } else {
         throw Exception('서버가 응답하지 않습니다.');
@@ -113,6 +107,7 @@ class _EmptyRoomListScreenState extends State<EmptyRoomListScreen> {
     }
   }
 
+  // [수정] 장부관리와 동일한 네비게이션 로직
   void _onItemTapped(int index) {
     Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(builder: (context) => HomePage(initialIndex: index)),
@@ -131,7 +126,7 @@ class _EmptyRoomListScreenState extends State<EmptyRoomListScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: isSelected ? Colors.blueAccent : Colors.grey.withOpacity(0.2), width: isSelected ? 2 : 1),
+        border: Border.all(color: isSelected ? Colors.deepPurple.shade400 : Colors.grey.withOpacity(0.2), width: isSelected ? 2 : 1), // [수정] 선택 색상 통일
         boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4))],
       ),
       child: Material(
@@ -145,7 +140,7 @@ class _EmptyRoomListScreenState extends State<EmptyRoomListScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(title, style: TextStyle(fontSize: 14, color: isSelected ? Colors.blueAccent : Colors.grey[700], fontWeight: FontWeight.w600)),
+                Text(title, style: TextStyle(fontSize: 14, color: isSelected ? Colors.deepPurple.shade400 : Colors.grey[700], fontWeight: FontWeight.w600)), // [수정] 텍스트 색상 통일
                 FittedBox(
                   fit: BoxFit.scaleDown,
                   alignment: Alignment.bottomRight,
@@ -271,6 +266,7 @@ class _EmptyRoomListScreenState extends State<EmptyRoomListScreen> {
           );
         },
       ),
+      // [수정] 장부관리와 동일한 하단 바 디자인 적용
       bottomNavigationBar: BottomNavigationBar(
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: '홈'),
@@ -279,8 +275,8 @@ class _EmptyRoomListScreenState extends State<EmptyRoomListScreen> {
           BottomNavigationBarItem(icon: Icon(Icons.people), label: '커뮤니티'),
           BottomNavigationBarItem(icon: Icon(Icons.campaign), label: '내집홍보'),
         ],
-        currentIndex: 0,
-        selectedItemColor: Colors.blueAccent,
+        currentIndex: 0, // 홈 탭 활성화
+        selectedItemColor: Colors.deepPurple.shade400, // [수정] 장부관리와 동일한 색상 (Deep Purple)
         unselectedItemColor: Colors.grey,
         onTap: _onItemTapped,
         type: BottomNavigationBarType.fixed,
@@ -307,13 +303,8 @@ class _EmptyRoomListScreenState extends State<EmptyRoomListScreen> {
                   propertyType: room.propertyType,
                   vacancyDuration: room.vacancyDuration,
                   desiredLeaseCondition: room.leaseCondition,
-
-                  // [3] 변경: 이전에 '-' 였던 것을 room.contractEndDate로 변경
                   vacancyStartDate: room.contractEndDate,
-
-                  // [4] 변경: 이전 임대 조건에 금액 포맷팅 적용
                   previousLeaseCondition: '${formatCurrency(room.deposit)} / ${formatCurrency(room.monthlyRent)}',
-
                   cleaningStatus: '-',
                   wallpaperStatus: '-', mainOptions: '-', repairHistory: '-',
                   lastInspectionDate: '-', inspectionItems: '-', actionTaken: '-',
@@ -349,13 +340,8 @@ class _EmptyRoomListScreenState extends State<EmptyRoomListScreen> {
                 propertyType: room.propertyType,
                 vacancyDuration: room.vacancyDuration,
                 desiredLeaseCondition: room.leaseCondition,
-
-                // [5] 변경: 웹 테이블 뷰에서도 동일하게 연결
                 vacancyStartDate: room.contractEndDate,
-
-                // [6] 변경: 웹 테이블 뷰에서도 동일하게 연결 및 포맷팅
                 previousLeaseCondition: '${formatCurrency(room.deposit)} / ${formatCurrency(room.monthlyRent)}',
-
                 cleaningStatus: '-',
                 wallpaperStatus: '-', mainOptions: '-', repairHistory: '-',
                 lastInspectionDate: '-', inspectionItems: '-', actionTaken: '-',

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import '../models/as_models.dart'; // 모델 파일 import
+import '../models/as_models.dart';
 
 class AsDetailScreen extends StatelessWidget {
   final AsRequest item;
@@ -22,14 +22,8 @@ class AsDetailScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 1. 제목
-            Text(
-              item.title,
-              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-            ),
+            Text(item.title, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
             const SizedBox(height: 16),
-
-            // 2. 작성자, 날짜, 호수 정보
             Row(
               children: [
                 const Icon(Icons.person, size: 16, color: Colors.grey),
@@ -50,12 +44,7 @@ class AsDetailScreen extends StatelessWidget {
             const SizedBox(height: 24),
             const Divider(),
             const SizedBox(height: 24),
-
-            // 3. 본문 내용
-            Text(
-              item.content,
-              style: const TextStyle(fontSize: 16, height: 1.6),
-            ),
+            Text(item.content, style: const TextStyle(fontSize: 16, height: 1.6)),
           ],
         ),
       ),

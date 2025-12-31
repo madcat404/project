@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:project/screens/home_page.dart';
 
+// 데이터 모델
 class DetailItem {
   final IconData icon;
   final String title;
@@ -81,10 +82,11 @@ class _BillingDetailsScreenState extends State<BillingDetailsScreen> with Ticker
     super.dispose();
   }
 
+  // 화면 이동 함수
   void _onItemTapped(int index) {
     Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(builder: (context) => HomePage(initialIndex: index)),
-      (Route<dynamic> route) => false,
+          (Route<dynamic> route) => false,
     );
   }
 
@@ -108,9 +110,8 @@ class _BillingDetailsScreenState extends State<BillingDetailsScreen> with Ticker
     return Row(children: [_buildPeriodButton('월', 0), _buildPeriodButton('년', 1), _buildPeriodButton('전체', 2)]);
   }
 
-  // 1. 화면 흔들림 문제 해결
   Widget _buildTimeNavigation() {
-    if (_periodSelection[0]) { // '월' 선택 시
+    if (_periodSelection[0]) {
       return Row(
         mainAxisAlignment: MainAxisAlignment.start,
         children: [
@@ -119,7 +120,7 @@ class _BillingDetailsScreenState extends State<BillingDetailsScreen> with Ticker
           IconButton(icon: const Icon(Icons.arrow_right), onPressed: () => setState(() => _currentMonth = (_currentMonth + 1) > 12 ? 1 : _currentMonth + 1)),
         ],
       );
-    } else if (_periodSelection[1]) { // '년' 선택 시
+    } else if (_periodSelection[1]) {
       return Row(
         mainAxisAlignment: MainAxisAlignment.start,
         children: [
@@ -128,7 +129,7 @@ class _BillingDetailsScreenState extends State<BillingDetailsScreen> with Ticker
           IconButton(icon: const Icon(Icons.arrow_right), onPressed: () => setState(() => _currentYear++)),
         ],
       );
-    } else { // '전체' 선택 시
+    } else {
       return Row(
         mainAxisAlignment: MainAxisAlignment.start,
         children: [
@@ -253,8 +254,9 @@ class _BillingDetailsScreenState extends State<BillingDetailsScreen> with Ticker
           BottomNavigationBarItem(icon: Icon(Icons.people), label: '커뮤니티'),
           BottomNavigationBarItem(icon: Icon(Icons.campaign), label: '내집홍보'),
         ],
-        currentIndex: 0, 
-        selectedItemColor: Colors.blueAccent,
+        currentIndex: 0,
+        // [핵심 수정] 다른 화면들과 동일한 Deep Purple 색상 적용
+        selectedItemColor: Colors.deepPurple.shade400,
         unselectedItemColor: Colors.grey,
         onTap: _onItemTapped,
         type: BottomNavigationBarType.fixed,

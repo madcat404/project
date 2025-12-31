@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:project/screens/home_page.dart';
 
-// 1. 최근 발송 내역 데이터 모델 추가
+// 1. 최근 발송 내역 데이터 모델
 class NotificationHistory {
   final String target;
   final String type;
@@ -23,21 +23,22 @@ class _NotificationScreenState extends State<NotificationScreen> {
   String _selectedType = '일반 공지';
   final TextEditingController _messageController = TextEditingController();
 
-  // 2. 최근 발송 내역 더미 데이터 생성
+  // 2. 최근 발송 내역 더미 데이터
   final List<NotificationHistory> _recentNotifications = [
     const NotificationHistory(target: '강남 럭키빌딩 전체', type: '일반 공지', message: '10월 정기 소독 안내...', timestamp: '1일 전'),
     const NotificationHistory(target: '마포 하이츠빌 101호', type: '요금 청구', message: '7월분 관리비 미납 안내...', timestamp: '3일 전'),
     const NotificationHistory(target: '모든 세입자', type: '계약 관련', message: '전세보증보험 관련 안내문...', timestamp: '7일 전'),
   ];
 
+  // [유지] 홈 화면으로 이동 로직
   void _onItemTapped(int index) {
     Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(builder: (context) => HomePage(initialIndex: index)),
-      (Route<dynamic> route) => false,
+          (Route<dynamic> route) => false,
     );
   }
 
-  // 3. 발송 완료 대화상자 함수 추가
+  // 3. 발송 완료 대화상자
   void _showSentDialog() {
     showDialog(
       context: context,
@@ -71,6 +72,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
           ],
         ),
       ),
+      // [수정] 다른 화면들과 동일한 색상(Deep Purple) 적용
       bottomNavigationBar: BottomNavigationBar(
         items: const <BottomNavigationBarItem>[
           BottomNavigationBarItem(icon: Icon(Icons.home), label: '홈'),
@@ -79,8 +81,8 @@ class _NotificationScreenState extends State<NotificationScreen> {
           BottomNavigationBarItem(icon: Icon(Icons.people), label: '커뮤니티'),
           BottomNavigationBarItem(icon: Icon(Icons.campaign), label: '내집홍보'),
         ],
-        currentIndex: 0, 
-        selectedItemColor: Colors.blueAccent,
+        currentIndex: 0,
+        selectedItemColor: Colors.deepPurple.shade400, // [핵심 수정] Blue -> DeepPurple
         unselectedItemColor: Colors.grey,
         onTap: _onItemTapped,
         type: BottomNavigationBarType.fixed,
@@ -135,9 +137,9 @@ class _NotificationScreenState extends State<NotificationScreen> {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-              onPressed: _showSentDialog, // 4. 버튼에 함수 연결
+              onPressed: _showSentDialog,
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blueAccent,
+                backgroundColor: Colors.deepPurple.shade400, // [수정] 버튼 색상도 테마에 맞춰 통일
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
               ),
@@ -166,32 +168,31 @@ class _NotificationScreenState extends State<NotificationScreen> {
     );
   }
 
-  // 5. 최근 발송 내역 UI 수정
   Widget _buildRecentHistory() {
     return _buildSection(
       title: '최근 발송 내역',
       child: _recentNotifications.isEmpty
           ? const Center(
-              child: Padding(
-                padding: EdgeInsets.symmetric(vertical: 24.0),
-                child: Text('아직 발송된 알림이 없습니다.', style: TextStyle(color: Colors.grey)),
-              ),
-            )
+        child: Padding(
+          padding: EdgeInsets.symmetric(vertical: 24.0),
+          child: Text('아직 발송된 알림이 없습니다.', style: TextStyle(color: Colors.grey)),
+        ),
+      )
           : ListView.separated(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: _recentNotifications.length,
-              separatorBuilder: (context, index) => const Divider(height: 16),
-              itemBuilder: (context, index) {
-                final item = _recentNotifications[index];
-                return ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: Text('[${item.type}] ${item.target}'),
-                  subtitle: Text(item.message, maxLines: 1, overflow: TextOverflow.ellipsis),
-                  trailing: Text(item.timestamp, style: const TextStyle(color: Colors.grey, fontSize: 12)),
-                );
-              },
-            ),
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        itemCount: _recentNotifications.length,
+        separatorBuilder: (context, index) => const Divider(height: 16),
+        itemBuilder: (context, index) {
+          final item = _recentNotifications[index];
+          return ListTile(
+            contentPadding: EdgeInsets.zero,
+            title: Text('[${item.type}] ${item.target}'),
+            subtitle: Text(item.message, maxLines: 1, overflow: TextOverflow.ellipsis),
+            trailing: Text(item.timestamp, style: const TextStyle(color: Colors.grey, fontSize: 12)),
+          );
+        },
+      ),
     );
   }
 }

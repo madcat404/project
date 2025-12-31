@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:project/screens/home_page.dart';
 
-// 데이터 모델은 그대로 유지
+// 데이터 모델
 class JobPosting {
   final String title;
   final String salary;
@@ -30,11 +30,11 @@ class JobListScreen extends StatelessWidget {
     JobPosting(title: '동부산롯데아울렛 미스카츠 홀정직원 구합니다', salary: '월급 300만원', workHours: '월,화,목,금,토,일 ・ 09:30 ~ 20:30', details: '미스카츠 ・ 기장읍', tags: ['모범구인', '정직원', '후기 78'], imageUrl: ' '),
   ];
 
-  // 1. 화면 이동 함수 추가
+  // 1. 화면 이동 함수
   void _onItemTapped(BuildContext context, int index) {
     Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(builder: (context) => HomePage(initialIndex: index)),
-      (Route<dynamic> route) => false,
+          (Route<dynamic> route) => false,
     );
   }
 
@@ -55,7 +55,7 @@ class JobListScreen extends StatelessWidget {
           return _buildJobItem(_jobPostings[index]);
         },
       ),
-      // 2. 네비게이션 바 추가
+      // 2. 네비게이션 바 (디자인 통일)
       bottomNavigationBar: BottomNavigationBar(
         items: const <BottomNavigationBarItem>[
           BottomNavigationBarItem(icon: Icon(Icons.home), label: '홈'),
@@ -65,7 +65,8 @@ class JobListScreen extends StatelessWidget {
           BottomNavigationBarItem(icon: Icon(Icons.campaign), label: '내집홍보'),
         ],
         currentIndex: 0,
-        selectedItemColor: Colors.blueAccent,
+        // [핵심 수정] 다른 화면들과 동일한 색상(Deep Purple) 적용
+        selectedItemColor: Colors.deepPurple.shade400,
         unselectedItemColor: Colors.grey,
         onTap: (index) => _onItemTapped(context, index),
         type: BottomNavigationBarType.fixed,
